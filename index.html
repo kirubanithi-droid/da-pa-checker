@@ -26,6 +26,7 @@
             border: 1px solid #ccc;
             border-radius: 4px;
             box-sizing: border-box;
+            font-size: 14px;
         }
         button {
             width: 100%;
@@ -66,48 +67,57 @@
 </div>
 
 <script>
-document.getElementById('checkBtn').addEventListener('click', function() {
+document.getElementById('checkBtn').addEventListener('click', async function() {
     const btn = this;
     const output = document.getElementById('output');
     const domainValue = document.getElementById('domains').value;
 
-    // Clean inputs and construct payload
+    // Clean domains format
     const cleanDomains = domainValue.split(',').map(d => d.trim()).join(',');
-    const data = 'domains=' + encodeURIComponent(cleanDomains);
+
+    // Format body payload to match content-type x-www-form-urlencoded
+    const payload = new URLSearchParams();
+    payload.append('domains', cleanDomains);
 
     btn.disabled = true;
     btn.innerText = 'Checking...';
     output.innerText = 'Fetching data...';
 
-    const xhr = new XMLHttpRequest();
-    
-    // NOTE: xhr.withCredentials = true; has been removed to prevent CORS issues.
+    // Corrected configuration variables from your screenshot:
+    const apiKey = 'ce77d538damsh1436346bc2d9fb3p13ae23jsn1fe6e98794d2';
+    const apiHost = 'bulk-ahref-da-pa-checker.p.rapidapi.com'; 
+    const apiUrl = 'https://bulk-ahref-da-pa-checker.p.rapidapi.com/bulk-dapa.php';
 
-    xhr.addEventListener('readystatechange', function () {
-        if (this.readyState === this.DONE) {
-            btn.disabled = false;
-            btn.innerText = 'Check Metrics';
+    try {
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'x-rapidapi-key': apiKey,
+                'x-rapidapi-host': apiHost,
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: payload
+        });
 
-            if (this.status === 200) {
-                try {
-                    // Try to format the response nicely if it's JSON
-                    const parsed = JSON.parse(this.responseText);
-                    output.innerText = JSON.stringify(parsed, null, 2);
-                } catch(e) {
-                    output.innerText = this.responseText;
-                }
-            } else {
-                output.innerText = `Status Error: ${this.status}\nResponse: ${this.responseText}`;
+        const textResult = await response.text();
+
+        if (response.ok) {
+            try {
+                const jsonResult = JSON.parse(textResult);
+                output.innerText = JSON.stringify(jsonResult, null, 2);
+            } catch {
+                output.innerText = textResult;
             }
+        } else {
+            output.innerText = `Error ${response.status}: ${response.statusText}\n\n${textResult}`;
         }
-    });
 
-    xhr.open('POST', 'https://bulk-ahref-da-pa-checker5.p.rapidapi.com/bulk-dapa.php');
-    xhr.setRequestHeader('x-rapidapi-key', 'ce77d538damsh1436346bc2d9fb3p13ae23jsn1fe6e98794d2');
-    xhr.setRequestHeader('x-rapidapi-host', 'bulk-ahref-da-pa-checker5.p.rapidapi.com');
-    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-
-    xhr.send(data);
+    } catch (error) {
+        output.innerText = `Network Error: ${error.message}\nIf this happens, check if an adblocker extension is blocking the connection.`;
+    } finally {
+        btn.disabled = false;
+        btn.innerText = 'Check Metrics';
+    }
 });
 </script>
 
