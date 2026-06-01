@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk DA/PA Checker</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        p {
+            color: #666;
+            margin-top: 0;
+            margin-bottom: 24px;
+        }
+        textarea {
+            width: 100%;
+            height: 120px;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            resize: vertical;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 12px;
+            width: 100%;
+            font-weight: 600;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .results-box {
+            margin-top: 24px;
+            padding: 16px;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            min-height: 50px;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            margin: 0;
+            font-family: monospace;
+            font-size: 13px;
+            background: #f1f1f1;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Bulk DA/PA Checker</h1>
+    <p>Enter domains separated by commas (e.g., youtube.com, google.com)</p>
+
+    <textarea id="domainInput">youtube.com, google.com</textarea>
+    <button id="submitBtn">Check Metrics</button>
+
+    <h2>Results</h2>
+    <div class="results-box" id="resultsContainer">
+        <span style="color: #999;">Results will appear here...</span>
+    </div>
+
+    <script>
+        document.getElementById('submitBtn').addEventListener('click', function() {
+            const input = document.getElementById('domainInput').value;
+            const submitBtn = document.getElementById('submitBtn');
+            const resultsContainer = document.getElementById('resultsContainer');
+
+            // Basic validation to check if empty
+            if (!input.trim()) {
+                resultsContainer.innerHTML = '<span class="error">Please enter at least one domain.</span>';
+                return;
+            }
+
+            // Clean up inputs and format them for the API payload
+            // Turns "youtube.com, google.com" into "youtube.com,google.com" then encodes it
+            const formattedDomains = input.split(',').map(d => d.trim()).join(',');
+            const payload = 'domains=' + encodeURIComponent(formattedDomains);
+
+            // Update UI state
+            submitBtn.disabled = true;
+            submitBtn.innerText = 'Checking...';
+            resultsContainer.innerHTML = '<em>Loading data from RapidAPI...</em>';
+
+            const xhr = new XMLHttpRequest();
+            xhr.withCredentials = true;
+
+            xhr.addEventListener('readystatechange', function () {
+                if (this.readyState === this.DONE) {
+                    // Re-enable button
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = 'Check Metrics';
+
+                    if (this.status >= 200 && this.status < 300) {
+                        try {
+                            // Try to pretty-print if it's JSON
+                            const jsonResponse = JSON.parse(this.responseText);
+                            resultsContainer.innerHTML = '<pre>' + JSON.stringify(jsonResponse, null, 2) + '</pre>';
+                        } catch (e) {
+                            // Fallback to raw text if it isn't JSON
+                            resultsContainer.innerHTML = '<pre>' + this.responseText + '</pre>';
+                        }
+                    } else {
+                        resultsContainer.innerHTML = '<span class="error">Error: ' + this.status + ' - Could not fetch data. Verify your API key.</span>';
+                    }
+                }
+            });
+
+            xhr.open('POST', 'https://bulk-ahref-da-pa-checker5.p.rapidapi.com/bulk-dapa.php');
+            xhr.setRequestHeader('x-rapidapi-key', 'ce77d538damsh1436346bc2d9fb3p13ae23jsn1fe6e98794d2');
+            xhr.setRequestHeader('x-rapidapi-host', 'bulk-ahref-da-pa-checker5.p.rapidapi.com');
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+
+            xhr.send(payload);
+        });
+    </script>
+
+</body>
+</html>
